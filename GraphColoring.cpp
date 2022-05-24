@@ -1,30 +1,49 @@
-﻿// GraphColoring.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+﻿// GraphColoring1.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 //
-
-#include "Graphcoloringheader.h"
-
-
-
-
+#include "for_file_output.h"
 
 
 int main()
 {
     int n, m, v1, v2;
-    cin >> n >> m;
-    vector<edge> edges;
-    vector<int> deg_v(n);
-    for (int i = 0; i < m; i++) {
-        cin >> v1 >> v2;
-        deg_v[v1] += 1;
-        deg_v[v2] += 1;
-        edge e = { v1,v2 };
-        edges.push_back(e);
+    random_device rd;
+    mt19937 g(rd());
+    vector<string> files;
+    auto cur_p = fs::current_path();
+    fs::path dir{ "data" };
+    fs::path pathtodata = cur_p / dir;
+    files = filesindir(pathtodata);
+    ofstream out("result.txt");
+    for (int file = 0; file < files.size(); file++) {
+        ifstream in(files[file]);
+        in >> n >> m;
+        vector<vector<int>> edges(n);//edges[vertex] contains all vertices agjacent to it
+        for (int i = 0; i < m; i++) {
+            in >> v1 >> v2;
+            edges[v1].push_back(v2);
+            edges[v2].push_back(v1);
+        }
+        vector<int> permutation;
+        for (int i = 0; i < n; i++) {
+            permutation.push_back(i);
+        }
+        int min_color = greedy_coloring(edges, permutation, n);//finding initial number of colors
+        int col;
+        //It is known that there exists a permutation which gives the true result for coloring 
+        // So I simple create permutation for several times to find the best one
+        // There are n! possible permutations but I don't have time for it so I use just n permutations
+        for (int cnt = 0; cnt < n; cnt++) {
+            shuffle(permutation.begin(), permutation.end(), g);
+            col = greedy_coloring(edges, permutation, n);
+            if (min_color > col) {
+                min_color = col;
+            }
+        }
+        cout << min_color;
+        fill_result(min_color, out, files[file]);
+        in.close();
     }
-    vector<int>::iterator res = max_element(deg_v.begin(), deg_v.end());
-    int dist = std::distance(deg_v.begin(), res);
-    int max_color_numbers = deg_v[dist];
-    cout << find_min_num_col(edges, n, m, max_color_numbers) + 1 << endl;
+    out.close();
     return 0;
 }
 
